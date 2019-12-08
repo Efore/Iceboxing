@@ -50,6 +50,8 @@ public:
 
 	bool IsHiddenInGame = false;
 
+protected:
+
 	UPROPERTY(VisibleAnywhere)
 		USkeletalMeshComponent* SkeletalMeshComponent;
 
@@ -58,8 +60,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 		FOnAttackEvent OnAttackEvent;
-
-protected:
 
 	UPROPERTY(EditDefaultsOnly)
 		float attackCooldown = 3.0f;
