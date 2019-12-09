@@ -24,7 +24,8 @@ protected:
 	
 protected:
 
-	void DestroyBlock(AActor* destroyer);
+	UFUNCTION(BlueprintCallable)
+	void DestroyBlock(AActor* destroyer, float force);
 	
 	UPROPERTY(EditDefaultsOnly)
 		float maxCollisionResistance;
@@ -34,6 +35,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 		class UDestructibleComponent* destructibleComponent;
+
+	UPROPERTY(VisibleAnywhere)
+		class UBoxComponent* boxComponent;
 
 	UPROPERTY(BlueprintReadOnly)
 		bool isDestroyed;

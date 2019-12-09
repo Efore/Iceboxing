@@ -2,6 +2,7 @@
 #include "BorderBlock.h"
 
 #include "DestructibleComponent.h"
+#include "Components/BoxComponent.h"
 #include "DrawDebugHelpers.h"
 
 // Sets default values
@@ -9,9 +10,12 @@ ABorderBlock::ABorderBlock()
 {	
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root Component"));
 
-	destructibleComponent = CreateDefaultSubobject<UDestructibleComponent>(TEXT("Destructible Component"));
-	destructibleComponent->SetNotifyRigidBodyCollision(true);	
-	destructibleComponent->SetupAttachment(RootComponent);
+	destructibleComponent = CreateDefaultSubobject<UDestructibleComponent>(TEXT("Destructible Component"));	
+	destructibleComponent->SetupAttachment(RootComponent);	
+
+	boxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("Box component"));
+	boxComponent->SetNotifyRigidBodyCollision(true);
+	boxComponent->SetupAttachment(RootComponent);
 
 	maxCollisionResistance = 10000.0f;
 }
@@ -20,7 +24,7 @@ ABorderBlock::ABorderBlock()
 void ABorderBlock::BeginPlay()
 {
 	Super::BeginPlay();
-	destructibleComponent->OnComponentHit.AddDynamic(this, &ABorderBlock::OnComponentHitCallback);	
+	boxComponent->OnComponentHit.AddDynamic(this, &ABorderBlock::OnComponentHitCallback);
 
 	isDestroyed = false;
 	currentCollisionResistance = maxCollisionResistance;
@@ -41,17 +45,17 @@ void ABorderBlock::OnComponentHitCallback(UPrimitiveComponent* HitComponent, AAc
 	if (currentCollisionResistance <= 0.0f)
 	{
 		hitLocation = Hit.ImpactPoint;
-		DestroyBlock(OtherActor);
-	}
-	
-	//OtherComp->AddImpulse(NormalImpulse);
+		DestroyBlock(OtherActor, collisionForce);
+	}	
 }
 
 
-void ABorderBlock::DestroyBlock(AActor* destroyer)
+void ABorderBlock::DestroyBlock(AActor* destroyer, float force)
 {
 	const FVector hitDirection = hitLocation - destroyer->GetActorLocation();
-	destructibleComponent->ApplyDamage(100, hitLocation, GetActorLocation(), defaultPiecesImpulse);
+
+	boxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	destructibleComponent->ApplyDamage(100, hitLocation, GetActorLocation(), force);
 
 	isDestroyed = true;		
 }
