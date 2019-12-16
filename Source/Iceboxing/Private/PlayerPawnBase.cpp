@@ -12,6 +12,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "LevelGameState.h"
 
 
 // Sets default values
@@ -34,8 +35,10 @@ void APlayerPawnBase::BeginPlay()
 	isAttacking = false;
 	movementGoal = currentMovement = FVector2D::ZeroVector;
 	currentAttackCharge = 0.0f;
-	currentAttackCooldown = attackCooldown;
+	currentAttackCooldown = attackMaxCooldown;
 	currentSideDodgeCooldown = sideDodgeCooldown;
+
+	GetWorld()->GetGameState<ALevelGameState>()->RegisterPlayingPawn(this);
 }
 
 // Called every frame
@@ -71,7 +74,7 @@ void APlayerPawnBase::ChargeAttack()
 	if (currentAttackCooldown >= attackMinCooldown)
 	{		
 		startAttackTime = currentAttackCooldown;
-		currentAttackCooldown = 0.0f;
+		currentAttackCharge = 0.0f;		
 		isAttacking = true;
 		OnAttackEvent.Broadcast(isAttacking);
 	}
@@ -82,6 +85,7 @@ void APlayerPawnBase::ReleaseAttack()
 	if (isAttacking)
 	{
 		isAttacking = false;
+		currentAttackCooldown = 0.0f;
 		OnAttackEvent.Broadcast(isAttacking);
 	}
 }
@@ -124,15 +128,15 @@ void APlayerPawnBase::ProcessCooldowns(float DeltaTime)
 		if (currentAttackCharge >= startAttackTime)
 			currentAttackCharge = startAttackTime;
 	}
-	else if (currentAttackCooldown < attackCooldown)
+	else if (currentAttackCooldown < attackMaxCooldown)
 	{
 		currentAttackCooldown += DeltaTime;
-		if (currentAttackCooldown > attackCooldown)
-			currentAttackCooldown = attackCooldown;
+		if (currentAttackCooldown > attackMaxCooldown)
+			currentAttackCooldown = attackMaxCooldown;
 	}
 
-	attackChargePercentage = currentAttackCharge / currentAttackCooldown;
-	attackCooldownPercentage = currentAttackCooldown / attackCooldown;
+	attackChargePercentage = currentAttackCharge / attackMaxCooldown;
+	attackCooldownPercentage = currentAttackCooldown / attackMaxCooldown;
 
 	if (currentSideDodgeCooldown < sideDodgeCooldown)
 	{
@@ -158,7 +162,9 @@ void APlayerPawnBase::CheckImpact()
 {
 	TArray<AActor*> receivers = GetAttackReceivers();
 
-	float force = attackPushForce * (currentAttackCharge / startAttackTime);
+	float force = attackPushForce * (currentAttackCharge / attackMaxCooldown);
+	UE_LOG(LogTemp, Warning, TEXT("force %f"), force);
+	currentAttackCharge = 0.0f;
 
 	for (int i = 0; i < receivers.Num(); ++i)
 	{

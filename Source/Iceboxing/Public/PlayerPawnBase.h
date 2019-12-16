@@ -62,7 +62,7 @@ protected:
 		FOnAttackEvent OnAttackEvent;
 
 	UPROPERTY(EditDefaultsOnly)
-		float attackCooldown = 3.0f;
+		float attackMaxCooldown = 3.0f;
 
 	UPROPERTY(EditDefaultsOnly)
 		float attackMinCooldown = 1.0f;
