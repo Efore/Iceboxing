@@ -186,3 +186,26 @@ TArray<AActor*> APlayerPawnBase::GetAttackReceivers()
 
 	return actors;
 }
+
+void APlayerPawnBase::SetPlayerControllerIndex(int index)
+{
+	switch (index)
+	{
+	case 0:
+		AutoPossessPlayer = EAutoReceiveInput::Player0;
+		break;
+	case 1:
+		AutoPossessPlayer = EAutoReceiveInput::Player1;
+		break;
+	case 2:
+		AutoPossessPlayer = EAutoReceiveInput::Player2;
+		break;
+	case 3:
+		AutoPossessPlayer = EAutoReceiveInput::Player3;
+		break;
+	default:
+		AutoPossessPlayer = EAutoReceiveInput::Player0;
+		break;
+	}
+}
+

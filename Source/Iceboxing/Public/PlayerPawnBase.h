@@ -17,6 +17,8 @@ public:
 	// Sets default values for this pawn's properties
 	APlayerPawnBase();
 
+	void SetPlayerControllerIndex(int index);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -26,6 +28,7 @@ protected:
 	void ProcessCooldowns(float DeltaTime);
 
 	void RotatePawnTowardsMovement();
+
 
 	UFUNCTION(BlueprintCallable)
 	void CheckImpact();
