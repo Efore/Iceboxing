@@ -29,7 +29,7 @@ protected:
 
 	TArray<APlayerController*> m_playerControllers;
 	TArray<TTuple<FVector, FQuat>> m_playerStartPositions;
-	APlayerController* m_firstPlayerController;
+	APlayerController* m_firstPlayerController; 
 
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "1", ClampMax = "4"), Category = "Params")
 		int NumberOfPlayers;

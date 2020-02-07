@@ -10,5 +10,15 @@ UCLASS()
 class ICEBOXING_API ACustomPlayerState : public APlayerState
 {
 	GENERATED_BODY()
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "CustomPlayerState")
+	 void SetIsReadyInLobby(bool value) { isReadyInLobby = value; }
 	
+	
+protected:
+	
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	bool isReadyInLobby = false;	
 };

@@ -26,7 +26,7 @@ void ACustomPlayerController::Move_YAxis(float AxisValue)
 
 void ACustomPlayerController::ChargeAttack()
 {
-	PlayerPawnBase->ChargeAttack();
+	PlayerPawnBase->ChargeAttack();  
 }
 
 void ACustomPlayerController::ReleaseAttack()

@@ -44,7 +44,7 @@ void AIceboxingGameModeBase::ManageControllers()
 
 void AIceboxingGameModeBase::SpawnPlayerPawns()
 {
-	for (int i = 0; i < m_playerStartPositions.Num(); ++i)
+	for (int i = 0; i < m_playerStartPositions.Num(); ++i)    
 	{
 		//For each start position, a Pawn is created with the transform information of that start position
 		FTransform transform(m_playerStartPositions[i].Value, m_playerStartPositions[i].Key);
