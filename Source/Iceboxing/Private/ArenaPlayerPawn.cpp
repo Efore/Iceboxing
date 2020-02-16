@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "PlayerPawnBase.h"
+#include "ArenaPlayerPawn.h"
 
 #include "assert.h"
 
@@ -12,11 +12,11 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
-#include "LevelGameState.h"
+#include "ArenaGameState.h"
 
 
 // Sets default values
-APlayerPawnBase::APlayerPawnBase()
+AArenaPlayerPawn::AArenaPlayerPawn()
 {
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -29,7 +29,7 @@ APlayerPawnBase::APlayerPawnBase()
 }
 
 // Called when the game starts or when spawned
-void APlayerPawnBase::BeginPlay()
+void AArenaPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	isAttacking = false;
@@ -38,11 +38,11 @@ void APlayerPawnBase::BeginPlay()
 	currentAttackCooldown = attackMaxCooldown;
 	currentSideDodgeCooldown = sideDodgeCooldown;
 
-	GetWorld()->GetGameState<ALevelGameState>()->RegisterPlayingPawn(this);
+	GetWorld()->GetGameState<AArenaGameState>()->RegisterPlayingPawn(this);
 }
 
 // Called every frame
-void APlayerPawnBase::Tick(float DeltaTime)
+void AArenaPlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -51,25 +51,25 @@ void APlayerPawnBase::Tick(float DeltaTime)
 	RotatePawnTowardsMovement();
 }
 
-void APlayerPawnBase::ReceiveAttack(APlayerPawnBase *attacker, float pushForce)
+void AArenaPlayerPawn::ReceiveAttack(AArenaPlayerPawn *attacker, float pushForce)
 {
 	assert(attacker);
 	//UE_LOG(LogTemp, Warning, TEXT("%s received attack from %s with force %f"), *this->GetName(),*attacker->GetName(), pushForce);
 	CapsuleComponent->AddImpulse((attacker->GetActorForwardVector()) * pushForce);
 }
 
-void APlayerPawnBase::Move_XAxis(float AxisValue)
+void AArenaPlayerPawn::Move_XAxis(float AxisValue)
 {
 	movementGoal.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
 }
 
-void APlayerPawnBase::Move_YAxis(float AxisValue)
+void AArenaPlayerPawn::Move_YAxis(float AxisValue)
 {
 	// Move at 100 units per second right or left
 	movementGoal.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
 }
 
-void APlayerPawnBase::ChargeAttack()
+void AArenaPlayerPawn::ChargeAttack()
 {
 	if (currentAttackCooldown >= attackMinCooldown)
 	{		
@@ -80,7 +80,7 @@ void APlayerPawnBase::ChargeAttack()
 	}
 }
 
-void APlayerPawnBase::ReleaseAttack()
+void AArenaPlayerPawn::ReleaseAttack()
 {
 	if (isAttacking)
 	{
@@ -90,7 +90,7 @@ void APlayerPawnBase::ReleaseAttack()
 	}
 }
 
-void APlayerPawnBase::SideDodge()
+void AArenaPlayerPawn::SideDodge()
 {
 	if (currentSideDodgeCooldown == sideDodgeCooldown)
 	{
@@ -99,14 +99,14 @@ void APlayerPawnBase::SideDodge()
 	}
 }
 
-void APlayerPawnBase::DisablePlayerPawn()
+void AArenaPlayerPawn::DisablePlayerPawn()
 {
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
 	IsHiddenInGame = true;
 }
 
-void APlayerPawnBase::ProcessPawnMovement()
+void AArenaPlayerPawn::ProcessPawnMovement()
 {
 	if (currentMovement.X != movementGoal.X)
 		currentMovement.X = FMath::Lerp(currentMovement.X, movementGoal.X, acceleration);
@@ -119,7 +119,7 @@ void APlayerPawnBase::ProcessPawnMovement()
 		CapsuleComponent->AddForce(FVector(currentMovement.X, currentMovement.Y, 0.0f));
 }
 
-void APlayerPawnBase::ProcessCooldowns(float DeltaTime)
+void AArenaPlayerPawn::ProcessCooldowns(float DeltaTime)
 {
 	if (isAttacking)
 	{
@@ -148,7 +148,7 @@ void APlayerPawnBase::ProcessCooldowns(float DeltaTime)
 	dodgeCooldownPercentage = currentSideDodgeCooldown / sideDodgeCooldown;
 }
 
-void APlayerPawnBase::RotatePawnTowardsMovement()
+void AArenaPlayerPawn::RotatePawnTowardsMovement()
 {
 	if (movementGoal != FVector2D::ZeroVector)
 	{
@@ -158,7 +158,7 @@ void APlayerPawnBase::RotatePawnTowardsMovement()
 	}
 }
 
-void APlayerPawnBase::CheckImpact()
+void AArenaPlayerPawn::CheckImpact()
 {
 	TArray<AActor*> receivers = GetAttackReceivers();
 
@@ -168,11 +168,11 @@ void APlayerPawnBase::CheckImpact()
 
 	for (int i = 0; i < receivers.Num(); ++i)
 	{
-		((APlayerPawnBase*)receivers[i])->ReceiveAttack(this, force);
+		((AArenaPlayerPawn*)receivers[i])->ReceiveAttack(this, force);
 	}	
 }
 
-TArray<AActor*> APlayerPawnBase::GetAttackReceivers()
+TArray<AActor*> AArenaPlayerPawn::GetAttackReceivers()
 {
 	FVector position = SkeletalMeshComponent->GetSocketLocation("LeftHand");
 
@@ -182,12 +182,12 @@ TArray<AActor*> APlayerPawnBase::GetAttackReceivers()
 	TArray < TEnumAsByte < EObjectTypeQuery > > collisionTypes = { type };
 
 	TArray<AActor*> actors;
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), position, 100.0f, collisionTypes, APlayerPawnBase::StaticClass(), { this }, actors);
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), position, 100.0f, collisionTypes, AArenaPlayerPawn::StaticClass(), { this }, actors);
 
 	return actors;
 }
 
-void APlayerPawnBase::SetPlayerControllerIndex(int index)
+void AArenaPlayerPawn::SetPlayerControllerIndex(int index)
 {
 	switch (index)
 	{

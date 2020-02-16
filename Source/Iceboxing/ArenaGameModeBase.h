@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "IceboxingGameModeBase.generated.h"
+#include "ArenaGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ICEBOXING_API AIceboxingGameModeBase : public AGameModeBase
+class ICEBOXING_API AArenaGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 

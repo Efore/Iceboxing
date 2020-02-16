@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "CustomPlayerState.generated.h"
+#include "LobbyPlayerState.generated.h"
 
 UCLASS()
-class ICEBOXING_API ACustomPlayerState : public APlayerState
+class ICEBOXING_API ALobbyPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
 public:
 
-	UFUNCTION(BlueprintCallable, Category = "CustomPlayerState")
+	UFUNCTION(BlueprintCallable, Category = "LobbyPlayerState")
 	 void SetIsReadyInLobby(bool value) { isReadyInLobby = value; }
 	
 	

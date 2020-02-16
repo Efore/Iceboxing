@@ -4,26 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
-#include "LevelGameState.generated.h"
+#include "ArenaGameState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPawnRegistered, class APlayerPawnBase*, playerPawn, int, currentNumOfPlayers);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPawnDestroyed, class APlayerPawnBase*, playerPawn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPawnRegistered, class AArenaPlayerPawn*, playerPawn, int, currentNumOfPlayers);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPawnDestroyed, class AArenaPlayerPawn*, playerPawn);
 
 /**
  * 
  */
 UCLASS()
-class ICEBOXING_API ALevelGameState : public AGameStateBase
+class ICEBOXING_API AArenaGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 	
 protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Level GameState")
-		TSet<class APlayerPawnBase*> PlayingPawns;
+		TSet<class AArenaPlayerPawn*> PlayingPawns;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Level GameState")
-		TSet<class APlayerPawnBase*> SpectatorPawns;
+		TSet<class AArenaPlayerPawn*> SpectatorPawns;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 		FOnPawnRegistered OnPawnRegisteredEvent;
@@ -33,8 +33,8 @@ protected:
 
 public:
 	
-	void RegisterPlayingPawn(class APlayerPawnBase* playerPawn);
+	void RegisterPlayingPawn(class AArenaPlayerPawn* playerPawn);
 	
-	void UnregisterPlayingPawn(class APlayerPawnBase* playerPawn);
+	void UnregisterPlayingPawn(class AArenaPlayerPawn* playerPawn);
 	
 };

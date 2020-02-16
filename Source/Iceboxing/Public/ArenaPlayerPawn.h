@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "PlayerPawnBase.generated.h"
+#include "ArenaPlayerPawn.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttackEvent, bool, ChargeAttack);
 
 UCLASS()
-class ICEBOXING_API APlayerPawnBase : public APawn
+class ICEBOXING_API AArenaPlayerPawn : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
-	APlayerPawnBase();
+	AArenaPlayerPawn();
 
 	void SetPlayerControllerIndex(int index);
 
@@ -39,7 +39,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void ReceiveAttack(APlayerPawnBase* attacker, float pushForce);
+	void ReceiveAttack(AArenaPlayerPawn* attacker, float pushForce);
 
 	//Input functions
 	void Move_XAxis(float AxisValue);

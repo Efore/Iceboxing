@@ -4,14 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "CustomPlayerController.generated.h"
+#include "ArenaPlayerController.generated.h"
 
 
 /**
  *
  */
 UCLASS()
-class ICEBOXING_API ACustomPlayerController : public APlayerController
+class ICEBOXING_API AArenaPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
@@ -32,6 +32,6 @@ public:
 protected:
 
 	UPROPERTY()
-		class APlayerPawnBase* PlayerPawnBase;
+		class AArenaPlayerPawn* ArenaPlayerPawn;
 };
 
