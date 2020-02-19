@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ArenaGameModeBase.h"
+#include "ArenaLocalGameModeBase.h"
 #include "ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -9,7 +9,7 @@
 #include "UMG.h"
 
 
-APlayerController* AArenaGameModeBase::SpawnPlayerController(ENetRole InRemoteRole, const FString & Options)
+APlayerController* AArenaLocalGameModeBase::SpawnPlayerController(ENetRole InRemoteRole, const FString & Options)
 {
 	//We override this method in order to have control over the Controllers' spawning
 	//UE_LOG(LogTemp, Warning, TEXT("spawning player"));
@@ -18,13 +18,13 @@ APlayerController* AArenaGameModeBase::SpawnPlayerController(ENetRole InRemoteRo
 	return m_firstPlayerController;
 }
 
-APawn * AArenaGameModeBase::SpawnDefaultPawnFor_Implementation(AController * NewPlayer, AActor * StartSpot)
+APawn * AArenaLocalGameModeBase::SpawnDefaultPawnFor_Implementation(AController * NewPlayer, AActor * StartSpot)
 {
 	//We override this method in order to have control over the player pawn's spawning
 	return nullptr;
 }
 
-void AArenaGameModeBase::ManageControllers()
+void AArenaLocalGameModeBase::ManageControllers()
 {
 	int playersSpawned = 1;
 	for (TActorIterator<APlayerStart> ActorItr(GetWorld()); ActorItr; ++ActorItr)
@@ -42,7 +42,7 @@ void AArenaGameModeBase::ManageControllers()
 	}
 }
 
-void AArenaGameModeBase::SpawnPlayerPawns()
+void AArenaLocalGameModeBase::SpawnPlayerPawns()
 {
 	for (int i = 0; i < m_playerStartPositions.Num(); ++i)    
 	{
@@ -70,7 +70,7 @@ void AArenaGameModeBase::SpawnPlayerPawns()
 	}
 }
 
-void AArenaGameModeBase::StartPlay()
+void AArenaLocalGameModeBase::StartPlay()
 {	
 	ManageControllers();
 	SpawnPlayerPawns();

@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "ArenaGameModeBase.generated.h"
+#include "ArenaLocalGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ICEBOXING_API AArenaGameModeBase : public AGameModeBase
+class ICEBOXING_API AArenaLocalGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 
@@ -19,7 +19,7 @@ public:
 
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, class AActor* StartSpot) override;
 
-	virtual void StartPlay() override;
+	virtual void StartPlay() override;	
 	
 protected:
 
