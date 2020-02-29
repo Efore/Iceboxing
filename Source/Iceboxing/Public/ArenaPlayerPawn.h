@@ -29,11 +29,28 @@ protected:
 
 	void RotatePawnTowardsMovement();
 
-
 	UFUNCTION(BlueprintCallable)
 	void CheckImpact();
 
 	TArray<AActor*> GetAttackReceivers();
+
+	UFUNCTION(Server, Unreliable)
+		void RPC_SendXAxisValueToServer(float axisValue);
+
+	UFUNCTION(Server, Unreliable)
+		void RPC_SendYAxisValueToServer(float axisValue);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void RPC_SendChargeAttackToServer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void RPC_SendReleaseAttackToServer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void RPC_SendSideDodgeToServer();
+
+	UFUNCTION()
+		void OnRep_isAttacking();
 
 public:
 	// Called every frame
@@ -88,19 +105,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 		float maxGoalMovement = 1000.0f;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Replicated)
 		FVector2D movementGoal;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Replicated)
 		float attackCooldownPercentage = 0.0f;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Replicated)
 		float attackChargePercentage = 0.0f;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Replicated)
 		float dodgeCooldownPercentage = 0.0f;	
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_isAttacking)
 	bool isAttacking;
 
 	float currentSideDodgeCooldown;

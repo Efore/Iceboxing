@@ -14,13 +14,12 @@ class ICEBOXING_API AArenaOnlineGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 
-public:
-
-	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
-
-	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, class AActor* StartSpot) override;
+public:	
 
 	virtual void StartPlay() override;
+
+	// Overriding the PostLogin functionvirtual 
+	virtual void PostLogin (APlayerController* NewPlayer) override;
 
 	class APlayerStart* RequestPlayerStart();
 

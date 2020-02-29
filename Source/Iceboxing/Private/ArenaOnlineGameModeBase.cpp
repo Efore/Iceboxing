@@ -8,24 +8,21 @@
 #include "ArenaPlayerPawn.h"
 #include "UMG.h"
 
-
-APawn * AArenaOnlineGameModeBase::SpawnDefaultPawnFor_Implementation(AController * NewPlayer, AActor * StartSpot)
-{
-	//We override this method in order to have control over the player pawn's spawning
-	return nullptr;
-}
-
-void AArenaOnlineGameModeBase::SwapPlayerControllers(APlayerController * OldPC, APlayerController * NewPC)
-{
-	m_connectedPlayers.Add(NewPC);
-}
-
 void AArenaOnlineGameModeBase::StartPlay()
 {
 	for (TActorIterator<APlayerStart> ActorItr(GetWorld()); ActorItr; ++ActorItr)
 	{
 		m_playerStarts.Add(Cast<APlayerStart>(*ActorItr));
 	}
+
+	Super::StartPlay();
+}
+
+void AArenaOnlineGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	m_connectedPlayers.Add(NewPlayer);
 }
 
 APlayerStart* AArenaOnlineGameModeBase::RequestPlayerStart()

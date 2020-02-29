@@ -28,16 +28,17 @@ protected:
 	void SideDodge();
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void IsReadyForServer();
+	void RPC_IsReadyForServer();
+
+	virtual void OnPossess(APawn* aPawn) override;
 
 public:
 
 	virtual void SetupInputComponent() override;
-	virtual void OnPossess(APawn* aPawn) override;
 
 protected:
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 		class AArenaPlayerPawn* ArenaPlayerPawn;
 };
 

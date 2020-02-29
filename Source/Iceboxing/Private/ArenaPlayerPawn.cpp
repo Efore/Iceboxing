@@ -13,6 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "ArenaGameState.h"
+#include "Net/UnrealNetwork.h"
 
 
 // Sets default values
@@ -26,6 +27,10 @@ AArenaPlayerPawn::AArenaPlayerPawn()
 	SkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComponent"));
 	SkeletalMeshComponent->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	RootComponent = CapsuleComponent;
+
+	SetReplicates(true);
+	NetUpdateFrequency = 66.0f;
+	MinNetUpdateFrequency = 33.0f;
 }
 
 // Called when the game starts or when spawned
@@ -45,10 +50,14 @@ void AArenaPlayerPawn::BeginPlay()
 void AArenaPlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	ProcessPawnMovement();
-	ProcessCooldowns(DeltaTime);
 	RotatePawnTowardsMovement();
+	
+	if (GetNetMode() < NM_Client)
+	{
+		ProcessCooldowns(DeltaTime);
+	}
 }
 
 void AArenaPlayerPawn::ReceiveAttack(AArenaPlayerPawn *attacker, float pushForce)
@@ -60,29 +69,51 @@ void AArenaPlayerPawn::ReceiveAttack(AArenaPlayerPawn *attacker, float pushForce
 
 void AArenaPlayerPawn::Move_XAxis(float AxisValue)
 {
-	movementGoal.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
+	if (GetNetMode() == NM_Client)
+	{
+		RPC_SendXAxisValueToServer(AxisValue);
+	}
+	else
+	{
+		movementGoal.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
+	}
 }
 
 void AArenaPlayerPawn::Move_YAxis(float AxisValue)
 {
-	// Move at 100 units per second right or left
-	movementGoal.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
+	if (GetNetMode() == NM_Client)
+	{
+		RPC_SendYAxisValueToServer(AxisValue);
+	}
+	else
+	{
+		// Move at 100 units per second right or left
+		movementGoal.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * maxGoalMovement;
+	}
 }
 
 void AArenaPlayerPawn::ChargeAttack()
 {
-	if (currentAttackCooldown >= attackMinCooldown)
-	{		
+	if (GetNetMode() == NM_Client)
+	{
+		RPC_SendChargeAttackToServer();
+	}
+	else if (currentAttackCooldown >= attackMinCooldown)
+	{
 		startAttackTime = currentAttackCooldown;
-		currentAttackCharge = 0.0f;		
+		currentAttackCharge = 0.0f;
 		isAttacking = true;
 		OnAttackEvent.Broadcast(isAttacking);
-	}
+	}	
 }
 
 void AArenaPlayerPawn::ReleaseAttack()
 {
-	if (isAttacking)
+	if (GetNetMode() == NM_Client)
+	{
+		RPC_SendReleaseAttackToServer();
+	}
+	else if (isAttacking)
 	{
 		isAttacking = false;
 		currentAttackCooldown = 0.0f;
@@ -92,7 +123,11 @@ void AArenaPlayerPawn::ReleaseAttack()
 
 void AArenaPlayerPawn::SideDodge()
 {
-	if (currentSideDodgeCooldown == sideDodgeCooldown)
+	if (GetNetMode() == NM_Client)
+	{
+		RPC_SendSideDodgeToServer();
+	}
+	else if (currentSideDodgeCooldown == sideDodgeCooldown)
 	{
 		CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
 		currentSideDodgeCooldown = 0.0f;
@@ -112,8 +147,6 @@ void AArenaPlayerPawn::ProcessPawnMovement()
 		currentMovement.X = FMath::Lerp(currentMovement.X, movementGoal.X, acceleration);
 	if (currentMovement.Y != movementGoal.Y)
 		currentMovement.Y = FMath::Lerp(currentMovement.Y, movementGoal.Y, acceleration);
-
-	//UE_LOG(LogTemp, Warning, TEXT("%f %f"), m_currentMovement.X, m_currentMovement.Y);
 
 	if (currentMovement != FVector2D::ZeroVector)
 		CapsuleComponent->AddForce(FVector(currentMovement.X, currentMovement.Y, 0.0f));
@@ -160,16 +193,19 @@ void AArenaPlayerPawn::RotatePawnTowardsMovement()
 
 void AArenaPlayerPawn::CheckImpact()
 {
-	TArray<AActor*> receivers = GetAttackReceivers();
+	if (GetNetMode() < NM_Client)
+	{	
+		TArray<AActor*> receivers = GetAttackReceivers();
 
-	float force = attackPushForce * (currentAttackCharge / attackMaxCooldown);
-	UE_LOG(LogTemp, Warning, TEXT("force %f"), force);
-	currentAttackCharge = 0.0f;
+		float force = attackPushForce * (currentAttackCharge / attackMaxCooldown);
+		UE_LOG(LogTemp, Warning, TEXT("force %f"), force);
+		currentAttackCharge = 0.0f;
 
-	for (int i = 0; i < receivers.Num(); ++i)
-	{
-		((AArenaPlayerPawn*)receivers[i])->ReceiveAttack(this, force);
-	}	
+		for (int i = 0; i < receivers.Num(); ++i)
+		{
+			((AArenaPlayerPawn*)receivers[i])->ReceiveAttack(this, force);
+		}
+	}
 }
 
 TArray<AActor*> AArenaPlayerPawn::GetAttackReceivers()
@@ -207,5 +243,71 @@ void AArenaPlayerPawn::SetPlayerControllerIndex(int index)
 		AutoPossessPlayer = EAutoReceiveInput::Player0;
 		break;
 	}
+}
+
+void AArenaPlayerPawn::RPC_SendXAxisValueToServer_Implementation(float axisValue)
+{
+	Move_XAxis(axisValue);
+}
+
+void AArenaPlayerPawn::RPC_SendYAxisValueToServer_Implementation(float axisValue)
+{
+	Move_YAxis(axisValue);
+}
+
+void AArenaPlayerPawn::RPC_SendChargeAttackToServer_Implementation()
+{
+	startAttackTime = currentAttackCooldown;
+	currentAttackCharge = 0.0f;
+	isAttacking = true;
+	OnAttackEvent.Broadcast(isAttacking);
+}
+
+bool AArenaPlayerPawn::RPC_SendChargeAttackToServer_Validate()
+{
+	return currentAttackCooldown >= attackMinCooldown;
+}
+
+
+void AArenaPlayerPawn::RPC_SendReleaseAttackToServer_Implementation()
+{
+	isAttacking = false;
+	currentAttackCooldown = 0.0f;
+	OnAttackEvent.Broadcast(isAttacking);
+}
+
+bool AArenaPlayerPawn::RPC_SendReleaseAttackToServer_Validate()
+{
+	return isAttacking;
+}
+
+void AArenaPlayerPawn::RPC_SendSideDodgeToServer_Implementation()
+{
+	CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
+	currentSideDodgeCooldown = 0.0f;
+}
+
+bool AArenaPlayerPawn::RPC_SendSideDodgeToServer_Validate()
+{
+	return currentSideDodgeCooldown == sideDodgeCooldown;
+}
+
+void AArenaPlayerPawn::OnRep_isAttacking()
+{
+	if (GetNetMode() == NM_Client)
+	{
+		OnAttackEvent.Broadcast(isAttacking);
+	}
+}
+
+void AArenaPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AArenaPlayerPawn, attackCooldownPercentage);
+	DOREPLIFETIME(AArenaPlayerPawn, attackChargePercentage);
+	DOREPLIFETIME(AArenaPlayerPawn, dodgeCooldownPercentage);	
+	DOREPLIFETIME(AArenaPlayerPawn, movementGoal);
+	DOREPLIFETIME(AArenaPlayerPawn, isAttacking);
 }
 

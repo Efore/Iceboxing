@@ -21,11 +21,14 @@ protected:
 
 	UFUNCTION()
 	void OnComponentHitCallback(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	
-protected:
 
+	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	void RPC_SendDestroyBlockToClients(AActor* destroyer, float force, FVector hitPoint);
+	
 	UFUNCTION(BlueprintCallable)
 	void DestroyBlock(AActor* destroyer, float force);
+
+protected:
 	
 	UPROPERTY(EditDefaultsOnly)
 		float maxCollisionResistance;
@@ -45,5 +48,4 @@ protected:
 	float currentCollisionResistance;
 
 	FVector hitLocation;
-
 };
