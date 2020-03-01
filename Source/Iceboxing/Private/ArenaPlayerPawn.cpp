@@ -43,7 +43,8 @@ void AArenaPlayerPawn::BeginPlay()
 	currentAttackCooldown = attackMaxCooldown;
 	currentSideDodgeCooldown = sideDodgeCooldown;
 
-	GetWorld()->GetGameState<AArenaGameState>()->RegisterPlayingPawn(this);
+	if (GetNetMode() < NM_Client)
+		GetWorld()->GetGameState<AArenaGameState>()->RegisterPlayingPawn(this);
 }
 
 // Called every frame
@@ -65,6 +66,8 @@ void AArenaPlayerPawn::ReceiveAttack(AArenaPlayerPawn *attacker, float pushForce
 	assert(attacker);
 	//UE_LOG(LogTemp, Warning, TEXT("%s received attack from %s with force %f"), *this->GetName(),*attacker->GetName(), pushForce);
 	CapsuleComponent->AddImpulse((attacker->GetActorForwardVector()) * pushForce);
+
+	RPC_SendReceiveAttackToClients(attacker, pushForce);
 }
 
 void AArenaPlayerPawn::Move_XAxis(float AxisValue)
@@ -206,6 +209,10 @@ void AArenaPlayerPawn::CheckImpact()
 			((AArenaPlayerPawn*)receivers[i])->ReceiveAttack(this, force);
 		}
 	}
+	else
+	{
+		RPC_SendCheckImpactToServer();
+	}
 }
 
 TArray<AActor*> AArenaPlayerPawn::GetAttackReceivers()
@@ -268,7 +275,6 @@ bool AArenaPlayerPawn::RPC_SendChargeAttackToServer_Validate()
 	return currentAttackCooldown >= attackMinCooldown;
 }
 
-
 void AArenaPlayerPawn::RPC_SendReleaseAttackToServer_Implementation()
 {
 	isAttacking = false;
@@ -290,6 +296,29 @@ void AArenaPlayerPawn::RPC_SendSideDodgeToServer_Implementation()
 bool AArenaPlayerPawn::RPC_SendSideDodgeToServer_Validate()
 {
 	return currentSideDodgeCooldown == sideDodgeCooldown;
+}
+
+void AArenaPlayerPawn::RPC_SendReceiveAttackToClients_Implementation(AArenaPlayerPawn* attacker, float pushForce)
+{
+	if (GetNetMode() == NM_Client)
+	{
+		CapsuleComponent->AddImpulse((attacker->GetActorForwardVector()) * pushForce);
+	}
+}
+
+bool AArenaPlayerPawn::RPC_SendReceiveAttackToClients_Validate(AArenaPlayerPawn* attacker, float pushForce)
+{
+	return attacker != nullptr;
+}
+
+void AArenaPlayerPawn::RPC_SendCheckImpactToServer_Implementation()
+{
+	CheckImpact();
+}
+
+bool AArenaPlayerPawn::RPC_SendCheckImpactToServer_Validate()
+{
+	return true;
 }
 
 void AArenaPlayerPawn::OnRep_isAttacking()

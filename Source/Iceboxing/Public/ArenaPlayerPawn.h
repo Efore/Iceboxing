@@ -47,7 +47,13 @@ protected:
 		void RPC_SendReleaseAttackToServer();
 
 	UFUNCTION(Server, Reliable, WithValidation)
+		void RPC_SendCheckImpactToServer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
 		void RPC_SendSideDodgeToServer();
+
+	UFUNCTION(Client, Reliable, WithValidation)
+		void RPC_SendReceiveAttackToClients(AArenaPlayerPawn* attacker, float pushForce);
 
 	UFUNCTION()
 		void OnRep_isAttacking();

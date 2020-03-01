@@ -19,11 +19,11 @@ class ICEBOXING_API AArenaGameState : public AGameStateBase
 	
 protected:
 
-	UPROPERTY(BlueprintReadOnly, Category = "Level GameState")
-		TSet<class AArenaPlayerPawn*> PlayingPawns;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Level GameState")
+		TArray<class AArenaPlayerPawn*> m_playingPawns;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Level GameState")
-		TSet<class AArenaPlayerPawn*> SpectatorPawns;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Level GameState")
+		TArray<class AArenaPlayerPawn*> m_spectatorPawns;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 		FOnPawnRegistered OnPawnRegisteredEvent;
