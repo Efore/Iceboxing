@@ -30,10 +30,14 @@ void ABorderBlock::BeginPlay()
 	Super::BeginPlay();
 
 	if (GetLocalRole() < ROLE_Authority)
+	{
+		FVector clientBoxExtent = boxComponent->GetUnscaledBoxExtent();
+		clientBoxExtent.Y *= 0.5f;
+		boxComponent->SetBoxExtent(clientBoxExtent);
 		return;
+	}
 
-	boxComponent->OnComponentHit.AddDynamic(this, &ABorderBlock::OnComponentHitCallback);
-
+	boxComponent->OnComponentHit.AddDynamic(this, &ABorderBlock::OnComponentHitCallback);	
 	isDestroyed = false;
 	currentCollisionResistance = maxCollisionResistance;
 }
@@ -46,7 +50,10 @@ void ABorderBlock::OnComponentHitCallback(UPrimitiveComponent* HitComponent, AAc
 	const float collisionForce = OtherActor->GetVelocity().Size();
 	const float dot = FVector::DotProduct(NormalImpulse.GetSafeNormal(), OtherActor->GetVelocity().GetSafeNormal());
 	
-	//UE_LOG(LogTemp, Warning, TEXT("force %f"), collisionForce);	
+	const float damage = dot * collisionForce;
+
+	if (damage < 300.0f)
+		return;
 
 	currentCollisionResistance -= dot * collisionForce;
 
