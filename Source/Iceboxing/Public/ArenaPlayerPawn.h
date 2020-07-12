@@ -55,6 +55,12 @@ protected:
 	UFUNCTION(Client, Reliable, WithValidation)
 		void RPC_SendReceiveAttackToClients(AArenaPlayerPawn* attacker, float pushForce);
 
+	UFUNCTION(NetMulticast, Reliable, WithValidation)
+		void RPC_SendStartBalancingToClients(FVector balancingPosition, FVector balancingDir);
+
+	UFUNCTION(NetMulticast, Reliable, WithValidation)
+		void RPC_SendStopBalancingToClients(bool success);
+
 	UFUNCTION()
 		void OnRep_isAttacking();
 
@@ -72,6 +78,9 @@ public:
 	void ReleaseAttack();
 	void SideDodge();
 
+	void StartBalancing();
+	void StopBalancing(bool success);
+
 	void DisablePlayerPawn();
 
 	bool IsHiddenInGame = false;
@@ -86,6 +95,15 @@ protected:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 		FOnAttackEvent OnAttackEvent;
+
+	UPROPERTY(EditDefaultsOnly)
+		float balancingForce = 1000.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float balancingMaxTime = 3.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		int balancingMaxCounter = 5;
 
 	UPROPERTY(EditDefaultsOnly)
 		float attackMaxCooldown = 3.0f;
@@ -126,11 +144,20 @@ protected:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_isAttacking)
 	bool isAttacking;
 
+	UPROPERTY(BlueprintReadOnly)
+	bool isBalancing;
+
 	float currentSideDodgeCooldown;
 
 	float currentAttackCharge;
 	float currentAttackCooldown;
 	float startAttackTime;
+	float currentBalancingTime;
+
+	int balancingCounter;
+
+	bool canReceiveInput;
 		
 	FVector2D currentMovement;
+	FVector balancingDirection;
 };

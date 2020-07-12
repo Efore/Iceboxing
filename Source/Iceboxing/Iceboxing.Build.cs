@@ -10,7 +10,7 @@ public class Iceboxing : ModuleRules
 
         bEnforceIWYU = true;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ApexDestruction" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ApexDestruction", "UMG" });
 
 		//PrivateDependencyModuleNames.AddRange(new string[] {  });
 

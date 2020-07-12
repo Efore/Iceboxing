@@ -5,7 +5,6 @@
 #include "assert.h"
 
 #include "DrawDebugHelpers.h"
-#include "BehaviorTree/BlackboardData.h"
 #include "Components/PrimitiveComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -14,6 +13,7 @@
 #include "Components/InputComponent.h"
 #include "ArenaGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine.h"
 
 
 // Sets default values
@@ -42,6 +42,7 @@ void AArenaPlayerPawn::BeginPlay()
 	currentAttackCharge = 0.0f;
 	currentAttackCooldown = attackMaxCooldown;
 	currentSideDodgeCooldown = sideDodgeCooldown;
+	canReceiveInput = true;
 
 	if (GetNetMode() < NM_Client)
 		GetWorld()->GetGameState<AArenaGameState>()->RegisterPlayingPawn(this);
@@ -66,12 +67,20 @@ void AArenaPlayerPawn::ReceiveAttack(AArenaPlayerPawn *attacker, float pushForce
 	assert(attacker);
 	//UE_LOG(LogTemp, Warning, TEXT("%s received attack from %s with force %f"), *this->GetName(),*attacker->GetName(), pushForce);
 	CapsuleComponent->AddImpulse((attacker->GetActorForwardVector()) * pushForce);
+	
+	if (isBalancing)
+	{
+		canReceiveInput = true;
+		isBalancing = false;
+	}
 
 	RPC_SendReceiveAttackToClients(attacker, pushForce);
 }
 
 void AArenaPlayerPawn::Move_XAxis(float AxisValue)
 {
+	if (!canReceiveInput) return;
+
 	if (GetNetMode() == NM_Client)
 	{
 		RPC_SendXAxisValueToServer(AxisValue);
@@ -84,6 +93,8 @@ void AArenaPlayerPawn::Move_XAxis(float AxisValue)
 
 void AArenaPlayerPawn::Move_YAxis(float AxisValue)
 {
+	if (!canReceiveInput) return;
+
 	if (GetNetMode() == NM_Client)
 	{
 		RPC_SendYAxisValueToServer(AxisValue);
@@ -97,6 +108,8 @@ void AArenaPlayerPawn::Move_YAxis(float AxisValue)
 
 void AArenaPlayerPawn::ChargeAttack()
 {
+	if (!canReceiveInput) return;
+
 	if (GetNetMode() == NM_Client)
 	{
 		RPC_SendChargeAttackToServer();
@@ -112,6 +125,8 @@ void AArenaPlayerPawn::ChargeAttack()
 
 void AArenaPlayerPawn::ReleaseAttack()
 {
+	if (!canReceiveInput) return;
+
 	if (GetNetMode() == NM_Client)
 	{
 		RPC_SendReleaseAttackToServer();
@@ -130,10 +145,70 @@ void AArenaPlayerPawn::SideDodge()
 	{
 		RPC_SendSideDodgeToServer();
 	}
-	else if (currentSideDodgeCooldown == sideDodgeCooldown)
+	else
 	{
-		CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
-		currentSideDodgeCooldown = 0.0f;
+		if (isBalancing)
+		{
+			balancingCounter--;
+		}
+
+		if (isBalancing && balancingCounter == 0)
+		{
+			StopBalancing(true);
+		}
+		else {
+
+			if (!canReceiveInput) return;
+
+			if (currentSideDodgeCooldown == sideDodgeCooldown)
+			{
+				CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
+				currentSideDodgeCooldown = 0.0f;
+			}
+		}
+	}
+}
+
+void AArenaPlayerPawn::StartBalancing()
+{
+	if(isAttacking)
+	{
+		isAttacking = false;
+		currentAttackCooldown = 0.0f;
+		OnAttackEvent.Broadcast(isAttacking);
+	}
+	
+	canReceiveInput = false;
+	isBalancing = true;
+	movementGoal = currentMovement = FVector2D::ZeroVector;
+	balancingDirection = CapsuleComponent->GetComponentVelocity();
+
+	currentBalancingTime = 0.0f;
+	balancingCounter = balancingMaxCounter;
+	
+	CapsuleComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+
+	this->SetActorRotation(balancingDirection.Rotation());
+
+	if (GetNetMode() < NM_Client)
+	{
+		RPC_SendStartBalancingToClients(GetActorLocation(), balancingDirection);
+	}
+}
+
+void AArenaPlayerPawn::StopBalancing(bool success)
+{
+	canReceiveInput = true;
+	isBalancing = false;	
+
+	this->SetActorRotation((-balancingDirection).GetUnsafeNormal().Rotation());
+	CapsuleComponent->AddImpulse(((success ? -1 : 1) * balancingDirection).GetUnsafeNormal() * balancingForce);
+	
+
+	if (GetNetMode() < NM_Client)
+	{
+		RPC_SendStopBalancingToClients(success);
 	}
 }
 
@@ -157,6 +232,15 @@ void AArenaPlayerPawn::ProcessPawnMovement()
 
 void AArenaPlayerPawn::ProcessCooldowns(float DeltaTime)
 {
+	if (isBalancing)
+	{
+		currentBalancingTime += DeltaTime;
+		if (currentBalancingTime >= balancingMaxTime)
+		{
+			StopBalancing(false);
+		}
+	}
+
 	if (isAttacking)
 	{
 		currentAttackCharge += DeltaTime;
@@ -201,7 +285,7 @@ void AArenaPlayerPawn::CheckImpact()
 		TArray<AActor*> receivers = GetAttackReceivers();
 
 		float force = attackPushForce * (currentAttackCharge / attackMaxCooldown);
-		UE_LOG(LogTemp, Warning, TEXT("force %f"), force);
+		
 		currentAttackCharge = 0.0f;
 
 		for (int i = 0; i < receivers.Num(); ++i)
@@ -289,13 +373,30 @@ bool AArenaPlayerPawn::RPC_SendReleaseAttackToServer_Validate()
 
 void AArenaPlayerPawn::RPC_SendSideDodgeToServer_Implementation()
 {
-	CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
-	currentSideDodgeCooldown = 0.0f;
+	if (isBalancing)
+	{
+		balancingCounter--;
+	}
+
+	if (isBalancing && balancingCounter == 0)
+	{
+		StopBalancing(true);
+	}
+	else {
+
+		if (!canReceiveInput) return;
+
+		if (currentSideDodgeCooldown == sideDodgeCooldown)
+		{
+			CapsuleComponent->AddImpulse(CapsuleComponent->GetRightVector().GetSafeNormal() * sideDodgeForce);
+			currentSideDodgeCooldown = 0.0f;
+		}
+	}
 }
 
 bool AArenaPlayerPawn::RPC_SendSideDodgeToServer_Validate()
 {
-	return currentSideDodgeCooldown == sideDodgeCooldown;
+	return true;
 }
 
 void AArenaPlayerPawn::RPC_SendReceiveAttackToClients_Implementation(AArenaPlayerPawn* attacker, float pushForce)
@@ -303,12 +404,61 @@ void AArenaPlayerPawn::RPC_SendReceiveAttackToClients_Implementation(AArenaPlaye
 	if (GetNetMode() == NM_Client)
 	{
 		CapsuleComponent->AddImpulse((attacker->GetActorForwardVector()) * pushForce);
+
+		if (isBalancing)
+		{
+			isBalancing = false;
+			canReceiveInput = true;
+		}
 	}
 }
 
 bool AArenaPlayerPawn::RPC_SendReceiveAttackToClients_Validate(AArenaPlayerPawn* attacker, float pushForce)
 {
 	return attacker != nullptr;
+}
+
+void AArenaPlayerPawn::RPC_SendStartBalancingToClients_Implementation(FVector balancingPosition, FVector balancingDir)
+{	
+	if (GetNetMode() == NM_Client)
+	{
+		if (isAttacking)
+		{
+			isAttacking = false;
+			currentAttackCooldown = 0.0f;
+			OnAttackEvent.Broadcast(isAttacking);
+		}
+
+		canReceiveInput = false;
+		isBalancing = true;		
+		movementGoal = currentMovement = FVector2D::ZeroVector;
+		balancingDirection = balancingDir;
+
+		CapsuleComponent->SetWorldLocation(balancingPosition);
+		CapsuleComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+
+		this->SetActorRotation(balancingDirection.Rotation());
+	}
+}
+
+bool AArenaPlayerPawn::RPC_SendStartBalancingToClients_Validate(FVector balancingPosition, FVector balancingDir)
+{
+	return true;
+}
+
+void AArenaPlayerPawn::RPC_SendStopBalancingToClients_Implementation(bool success)
+{
+	if (GetNetMode() == NM_Client)
+	{
+		canReceiveInput = true;
+		isBalancing = false;
+	}
+}
+
+bool AArenaPlayerPawn::RPC_SendStopBalancingToClients_Validate(bool success)
+{
+	return true;
 }
 
 void AArenaPlayerPawn::RPC_SendCheckImpactToServer_Implementation()

@@ -15,6 +15,9 @@ public:
 	// Sets default values for this actor's properties
 	ABorderBlock();
 
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -35,6 +38,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 		float defaultPiecesImpulse;
+
+	UPROPERTY(EditDefaultsOnly)
+		float maxSpeedForBalancing;
 
 	UPROPERTY(VisibleAnywhere)
 		class UDestructibleComponent* destructibleComponent;
